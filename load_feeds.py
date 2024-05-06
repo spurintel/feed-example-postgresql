@@ -33,6 +33,7 @@ cur = conn.cursor()
 
 # Create data table
 create_anon_table = sql.SQL("""
+DROP TABLE IF EXISTS spur_anonymous;
 CREATE TABLE IF NOT EXISTS spur_anonymous (
     ip inet NOT NULL,
     organization text,
@@ -43,6 +44,7 @@ cur.execute(create_anon_table)
 
 # Create partition table
 create_part_table = sql.SQL(f"""
+DROP TABLE IF EXISTS spur_anonymous_{feed_date};
 CREATE TABLE IF NOT EXISTS spur_anonymous_{feed_date} PARTITION OF spur_anonymous
 FOR VALUES FROM ('{feed_date}') TO ('{feed_date_end}');
 """)
@@ -51,17 +53,18 @@ cur.execute(create_part_table)
 # create temp table
 # can put this in a fast tablespace if you have one
 create_temp_table = sql.SQL("""
-DROP TABLE IF EXISTS temp_spur;
-CREATE TABLE temp_spur (data jsonb)
+CREATE TEMP TABLE temp_spur (data JSONB)
+ON COMMIT DROP
 """)
 cur.execute(create_temp_table)
 
 # Load data into the temporary table
-with gzip.open("anonymous-sample.json.gz", 'rt') as datafile:
-    with cur.copy("COPY temp_spur (data) FROM STDIN") as copy:
+with gzip.open("anonymous-residential.json.gz", 'rt') as datafile:
+    # This is JSON not CSV we are importing, but this preserves escaped quotes in JSON
+    # without expensive ingle line imports or string processing
+    with cur.copy("COPY temp_spur (data) FROM STDIN CSV QUOTE e'\x01' DELIMITER e'\x02'") as copy:
         while data := datafile.read(32000):
             copy.write(data)
-conn.commit()
 
 # Load the data from the temp table into the appropriate partition
 process_temp_table = sql.SQL(f"""
@@ -70,13 +73,6 @@ SELECT (data->>'ip')::inet as ip, data->>'organization' as organization, '{feed_
 FROM temp_spur;
 """)
 cur.execute(process_temp_table)
-conn.commit()
-
-# drop temp table
-drop_temp_table = sql.SQL("""
-DROP TABLE IF EXISTS temp_spur
-""")
-cur.execute(drop_temp_table)
 conn.commit()
 
 # Close the cursor and connection to the server
