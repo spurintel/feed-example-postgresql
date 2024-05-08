@@ -14,10 +14,25 @@ everything up to date.
 
 This also uses psycopg to bulk load (PostgreSQL COPY) the JSON data files in a performant way.
 
+## Column definitions
+
+ip                     The IP address queried
+as                     Autonomous System Details
+client.behaviors       Behaviors of clients on this IP
+client.concentration   Location concentration of clients on this IP
+client.count           Average number of clients observed per day
+client.countries       Number of countries clients have come from
+client.proxies         Call-back proxies running from devices on this IP
+client.spread          The geographic spread of clients (km^2)
+client.types           Types of client devices observed
+infrastructure         The classification of infrastructure this IP is in
+organization           The organization operating the IP address
+location               Maxmind GeoLite2 location data
+services               Protocols and services running on this IP (e.g. OpenVPN)
+tunnels                VPN/Proxy/Anonymization details and operator information
+risks                  Risks and threats from this IP address
 
 ## Docker example
-
-Not scaled for production use.
 
 usage:
 ```

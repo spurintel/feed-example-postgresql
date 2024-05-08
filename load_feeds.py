@@ -4,7 +4,8 @@ import gzip
 from psycopg import sql
 import tempfile
 import requests
-from feeds_db import SpurFeeds, init_db, create_date_partition, FEED_TYPES
+from feeds_db import init_db, create_date_partition, FEED_TYPES
+from datetime import datetime, timedelta
 
 # Database connection parameters
 dbname = "postgres"
@@ -77,11 +78,18 @@ def load_feed(feed_type, feed_file, feed_date):
     else:
         ip_transform = "(data->>'ip')::inet"
     process_temp_table = sql.SQL(f"""
-        INSERT INTO spur_feed (ip, feed_type, feed_date, organization, load_time)
-        SELECT {ip_transform} as ip, 
+        INSERT INTO autonomous_systems (as_number, organization_name)
+        SELECT (data->'as'->>'number')::INTEGER as as_number,
+            (data->'as'->>'organization') as organization_name
+        FROM temp_spur
+        ON CONFLICT (as_number) DO NOTHING;
+                                 
+        INSERT INTO spur (ip, as_number, feed_type, feed_date, organization, load_time)
+        SELECT {ip_transform} as ip,
+            (data->'as'->>'number')::INTEGER as as_number,
             '{feed_type}' as feed_type,
-            '{feed_date}'::date as feed_date,
-            data->>'organization' as organization,
+            '{feed_date}'::DATE as feed_date,
+            (data->>'organization') as organization,
             CURRENT_TIMESTAMP AT TIME ZONE 'UTC' as load_time
         FROM temp_spur;
         """)
@@ -98,15 +106,20 @@ if __name__ == '__main__':
     # cur = conn.cursor()
 
     init_db()
-    for feed_type in ['anonymous','anonymous-ipv6']:
+    for feed_type in ['anonymous-ipv6']:
         # download feed to a temp file
         (feed_file, feed_date) = download_feed(feed_type)
+        # Calculate end date (1 day at present)
+        # This operation also serves as input sanitization to prevent SQL injection
+        feed_date_obj = datetime.strptime(feed_date, "%Y%m%d").date()
+        feed_date_end_obj = feed_date_obj + timedelta(days=1)
+        feed_date_end = feed_date_end_obj.strftime("%Y%m%d")
         # This converts the feed names from hyphenated to underscored
-        # It isn't ideal, but Postgres doesn't like hyphens in table and column names
-        create_date_partition(feed_type.replace('-','_'), feed_date)
+        # Not ideal, but Postgres doesn't like hyphens in table and column names
+        create_date_partition(feed_type.replace('-','_'), feed_date, feed_date_end)
         load_feed(feed_type.replace('-','_'), feed_file, feed_date)
 
-    #     # delete feed temp file
+        # delete feed temp file
     #     os.remove(feed_file)
 
     # Close the cursor and connection to the server

@@ -24,3 +24,12 @@ services:
     restart: always
     ports:
       - 8080:8080
+
+  pgadmin:
+    image: dpage/pgadmin4
+    restart: always
+    ports:
+      - 80:80
+    environment:
+      PGADMIN_DEFAULT_PASSWORD: spur_example_CHANGEME
+      PGADMIN_DEFAULT_EMAIL: example@spur.us
