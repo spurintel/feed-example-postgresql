@@ -79,17 +79,27 @@ def load_feed(feed_type, feed_file, feed_date):
         ip_transform = "(data->>'ip')::inet"
     process_temp_table = sql.SQL(f"""
         INSERT INTO autonomous_systems (as_number, organization_name)
-        SELECT (data->'as'->>'number')::INTEGER as as_number,
+        SELECT DISTINCT ON ((data->'as'->>'number')::INTEGER) (data->'as'->>'number')::INTEGER as as_number,
             (data->'as'->>'organization') as organization_name
         FROM temp_spur
-        ON CONFLICT (as_number) DO NOTHING;
-                                 
-        INSERT INTO spur (ip, as_number, feed_type, feed_date, organization, load_time)
+        ON CONFLICT (as_number)
+        DO UPDATE SET organization_name = EXCLUDED.organization_name
+        WHERE autonomous_systems.organization_name <> EXCLUDED.organization_name
+        """)
+    cur.execute(process_temp_table)
+    process_temp_table = sql.SQL(f"""
+        INSERT INTO spur (ip, as_number, client, infrastructure, organization, location, services, tunnels, risks, feed_type, feed_date, load_time)
         SELECT {ip_transform} as ip,
             (data->'as'->>'number')::INTEGER as as_number,
+            (data->'client') as client,
+            (data->>'infrastructure') as infrastructure,
+            (data->>'organization') as organization,
+            (data->'location') as location,
+            string_to_array(jsonb_array_elements_text(data->'services'), ',') as services,
+            (data->'tunnels') as tunnels,
+            string_to_array(jsonb_array_elements_text(data->'risks'), ',') as risks,
             '{feed_type}' as feed_type,
             '{feed_date}'::DATE as feed_date,
-            (data->>'organization') as organization,
             CURRENT_TIMESTAMP AT TIME ZONE 'UTC' as load_time
         FROM temp_spur;
         """)
@@ -106,7 +116,9 @@ if __name__ == '__main__':
     # cur = conn.cursor()
 
     init_db()
-    for feed_type in ['anonymous-ipv6']:
+    for feed_type in ['anonymous', 'anonymous-residential', 'anonymous-residential-ipv6', 'anonymous-ipv6']:
+    # for feed_type in ['anonymous-ipv6']:
+        start_time = datetime.now()
         # download feed to a temp file
         (feed_file, feed_date) = download_feed(feed_type)
         # Calculate end date (1 day at present)
@@ -118,6 +130,8 @@ if __name__ == '__main__':
         # Not ideal, but Postgres doesn't like hyphens in table and column names
         create_date_partition(feed_type.replace('-','_'), feed_date, feed_date_end)
         load_feed(feed_type.replace('-','_'), feed_file, feed_date)
+        elapsed_time = datetime.now() - start_time
+        print(f"Elapsed time: {elapsed_time} to download and ingest {feed_type}")
 
         # delete feed temp file
     #     os.remove(feed_file)

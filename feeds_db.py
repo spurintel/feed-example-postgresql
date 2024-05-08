@@ -1,7 +1,7 @@
 
 from sqlalchemy import create_engine, Column, Integer, Date, Text, text, ForeignKey
 from sqlalchemy.orm import declarative_base, relationship
-from sqlalchemy.dialects.postgresql import INET, TIMESTAMP, JSON
+from sqlalchemy.dialects.postgresql import INET, TIMESTAMP, JSONB, ARRAY
 from sqlalchemy.sql import func
 
 FEED_TYPES = ['anonymous', "anonymous_residential", "anonymous_ipv6", "anonymous_residential_ipv6"]
@@ -16,13 +16,15 @@ class SpurFeed(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     ip = Column(INET, primary_key=True)
     as_number = Column(Integer, ForeignKey('autonomous_systems.as_number'))
-    client = Column(JSON)
-    tunnels = Column(JSON)
-    location = Column(JSON)
-    risks = Column(JSON)
+    client = Column(JSONB)
+    infrastructure = Column(Text)
+    organization = Column(Text)
+    location = Column(JSONB)
+    services = Column(ARRAY(Text))
+    tunnels = Column(JSONB)
+    risks = Column(ARRAY(Text))
     feed_type = Column(Text, nullable=False, primary_key=True)
     feed_date = Column(Date, nullable=False, primary_key=True, default=func.current_date())
-    organization = Column(Text)
     load_time = Column(TIMESTAMP, default=func.now().op('AT TIME ZONE')('UTC'))
     __table_args__ = {'postgresql_partition_by': 'LIST (feed_type)'}
 
@@ -45,7 +47,6 @@ def init_db():
         # Make partitions for each data type
         for feed_type in FEED_TYPES:
             partition = text(f"""
-                DROP TABLE IF EXISTS spur_{feed_type};
                 CREATE TABLE IF NOT EXISTS spur_{feed_type}
                 PARTITION OF spur
                 FOR VALUES IN ('{feed_type}')
