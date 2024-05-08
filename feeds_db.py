@@ -4,7 +4,10 @@ from sqlalchemy.orm import declarative_base, relationship
 from sqlalchemy.dialects.postgresql import INET, TIMESTAMP, JSONB, ARRAY
 from sqlalchemy.sql import func
 
-FEED_TYPES = ['anonymous', "anonymous_residential", "anonymous_ipv6", "anonymous_residential_ipv6"]
+FEED_TYPES = ['anonymous', "anonymous-residential", "anonymous-ipv6", "anonymous-residential-ipv6"]
+# NOTE that some calls convert the feed names from hyphenated to underscored
+# Not ideal, but Postgres doesn't like hyphens in table and column names
+# You can, but then they have to be in quotes.  Which is differently non-ideal.
 
 Base = declarative_base()
 
@@ -47,7 +50,7 @@ def init_db():
         # Make partitions for each data type
         for feed_type in FEED_TYPES:
             partition = text(f"""
-                CREATE TABLE IF NOT EXISTS spur_{feed_type}
+                CREATE TABLE IF NOT EXISTS spur_{feed_type.replace('-','_')}
                 PARTITION OF spur
                 FOR VALUES IN ('{feed_type}')
                 PARTITION BY RANGE (feed_date)
@@ -59,10 +62,14 @@ def create_date_partition(feed_type, feed_date, feed_date_end):
     # Each range's bounds are inclusive at the lower end and exclusive at the upper end.
     # So end date will be tomorrow, BUT tomorrow's data will not be in this partition
 
+    # This currently DROPS the table for today if it exists and recreates it.
+    # This should only happen if the data is loaded multiple times in one day.
+    # It should prevent duplicate records from being loaded in the same day.
     if feed_type in FEED_TYPES:
         partition = text(f"""
-        CREATE TABLE IF NOT EXISTS spur_{feed_type}_{feed_date}
-        PARTITION OF spur_{feed_type}
+        DROP TABLE IF EXISTS spur_{feed_type.replace('-','_')}_{feed_date};
+        CREATE TABLE spur_{feed_type.replace('-','_')}_{feed_date}
+        PARTITION OF spur_{feed_type.replace('-','_')}
         FOR VALUES FROM ('{feed_date}') TO ('{feed_date_end}')
         """)
 

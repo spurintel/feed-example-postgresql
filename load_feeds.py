@@ -116,8 +116,10 @@ if __name__ == '__main__':
     # cur = conn.cursor()
 
     init_db()
-    for feed_type in ['anonymous', 'anonymous-residential', 'anonymous-residential-ipv6', 'anonymous-ipv6']:
-    # for feed_type in ['anonymous-ipv6']:
+    # override FEED_TYPES if you only want to ingest a subset of the supported feed types. e.g.
+    # FEED_TYPES = ['anonymous-ipv6']
+
+    for feed_type in FEED_TYPES:
         start_time = datetime.now()
         # download feed to a temp file
         (feed_file, feed_date) = download_feed(feed_type)
@@ -126,10 +128,8 @@ if __name__ == '__main__':
         feed_date_obj = datetime.strptime(feed_date, "%Y%m%d").date()
         feed_date_end_obj = feed_date_obj + timedelta(days=1)
         feed_date_end = feed_date_end_obj.strftime("%Y%m%d")
-        # This converts the feed names from hyphenated to underscored
-        # Not ideal, but Postgres doesn't like hyphens in table and column names
-        create_date_partition(feed_type.replace('-','_'), feed_date, feed_date_end)
-        load_feed(feed_type.replace('-','_'), feed_file, feed_date)
+        create_date_partition(feed_type, feed_date, feed_date_end)
+        load_feed(feed_type, feed_file, feed_date)
         elapsed_time = datetime.now() - start_time
         print(f"Elapsed time: {elapsed_time} to download and ingest {feed_type}")
 
