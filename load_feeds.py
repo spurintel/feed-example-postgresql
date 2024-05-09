@@ -12,7 +12,7 @@ dbname = "postgres"
 user = "postgres"
 password = "spur_example_CHANGEME"
 host = "localhost"
-SPUR_API_TOKEN = os.getenv('API_TOKEN', None)
+SPUR_API_TOKEN = os.getenv('SPUR_API_TOKEN', None)
 
 # Connect to your postgres DB
 conn = psycopg.connect(dbname=dbname, user=user, password=password, host=host)
