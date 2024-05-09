@@ -16,6 +16,8 @@ This also uses psycopg to bulk load (PostgreSQL COPY) the JSON data files in a p
 
 ## Column definitions
 
+Detailed information on Spur feeds can be found at https://docs.spur.us/feeds
+
 ```
 ip                     The IP address queried
 as                     Autonomous System Details
@@ -36,7 +38,7 @@ risks                  Risks and threats from this IP address
 
 ## Docker example
 
-Requires a recent version of Docker on Linux or MacOS.
+Requires a recent version of Docker and Python.  
 
 Launch a PostgreSQL container:
 ```sh
@@ -51,7 +53,7 @@ This also starts pgadmin4 on http://localhost:80.  It is a powerful tool, but co
 
 ### Load the data
 
-The data is downloaded and then loaded into the database using a Python script `load_feeds.py`.  Requires a recent version of Python 3.
+The data is downloaded and then loaded into the database using a Python script `load_feeds.py`.
 
 1) Make your Spur token available as an environment variable:
 ```sh
@@ -118,7 +120,7 @@ AND NOT as_number = 54113
 AND NOT location @> '{"country": "US"}'  
 LIMIT 100](http://localhost:8080/?pgsql=db&username=postgres&db=postgres&ns=public&sql=select%20*%20FROM%20spur%20%0AWHERE%20family(ip)%20%3D%206%0AAND%20tunnels%20%40%3E%20%27%5B%7B%22operator%22%3A%20%22ICLOUD_RELAY_PROXY%22%7D%5D%27%0AAND%20NOT%20as_number%20%3D%2054113%0AAND%20NOT%20location%20%40%3E%20%27%7B%22country%22%3A%20%22US%22%7D%27%0ALIMIT%20100)
 
-You can also extract values from the JSONB column and cast them to the appropriate type for comparison.
+You can also extract values from the JSONB column and cast them to the appropriate type for comparison.  
 Query for entries that show a GEO_MISMATCH risk and a client count over 10:  
 [SELECT ip, client  
 FROM spur  

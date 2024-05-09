@@ -22,7 +22,10 @@ services:
     ports:
       - 127.0.0.1:5432:5432
     volumes:
-     - './data/postgresql:/var/lib/postgresql/data'
+    # :delegated really only applies to Docker for MacOS
+    # otherwise performance is severely degraded
+    # it is ignored on other platforms
+     - './data/postgresql:/var/lib/postgresql/data:delegated'
 
   # Stupid simple DB interface
   adminer:
