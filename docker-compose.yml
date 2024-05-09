@@ -14,22 +14,29 @@ services:
     #    target: /dev/shm
     #    tmpfs:
     #      size: 134217728 # 128*2^20 bytes = 128Mb
+    # Change the default password, please
     environment:
       POSTGRES_PASSWORD: spur_example_CHANGEME
+    # Ports limited to localhost
+    # Don't change this unless you know what you are doing securitywise
     ports:
-      - 5432:5432
+      - 127.0.0.1:5432:5432
 
+  # Stupid simple DB interface
   adminer:
     image: adminer
     restart: always
+    # Ports limited to localhost
+    # Don't change this unless you know what you are doing securitywise
     ports:
-      - 8080:8080
+      - 127.0.0.1:8080:8080
 
-  pgadmin:
-    image: dpage/pgadmin4
-    restart: always
-    ports:
-      - 80:80
-    environment:
-      PGADMIN_DEFAULT_PASSWORD: spur_example_CHANGEME
-      PGADMIN_DEFAULT_EMAIL: example@spur.us
+  # PgAdmin is great, but can be a bit cumbersome
+  # pgadmin:
+  #   image: dpage/pgadmin4
+  #   restart: always
+  #   ports:
+  #     - 127.0.0.1:80:80
+  #   environment:
+  #     PGADMIN_DEFAULT_PASSWORD: spur_example_CHANGEME
+  #     PGADMIN_DEFAULT_EMAIL: example@spur.us

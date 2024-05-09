@@ -77,6 +77,8 @@ def load_feed(feed_type, feed_file, feed_date):
         ip_transform = "(data->>'network')::cidr"
     else:
         ip_transform = "(data->>'ip')::inet"
+    # Populate the AS table
+    # NOTE: "as" is a reserved word in PostgreSQL, so that field has been renamed to "as_number" in the database
     process_temp_table = sql.SQL(f"""
         INSERT INTO autonomous_systems (as_number, organization_name)
         SELECT DISTINCT ON ((data->'as'->>'number')::INTEGER) (data->'as'->>'number')::INTEGER as as_number,
@@ -134,9 +136,9 @@ if __name__ == '__main__':
         print(f"Elapsed time: {elapsed_time} to download and ingest {feed_type}")
 
         # delete feed temp file
-    #     os.remove(feed_file)
+        os.remove(feed_file)
 
     # Close the cursor and connection to the server
-    # cur.close()
-    # conn.close()
+    cur.close()
+    conn.close()
 

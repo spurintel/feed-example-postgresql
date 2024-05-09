@@ -5,15 +5,15 @@ from sqlalchemy.dialects.postgresql import INET, TIMESTAMP, JSONB, ARRAY
 from sqlalchemy.sql import func
 
 FEED_TYPES = ['anonymous', "anonymous-residential", "anonymous-ipv6", "anonymous-residential-ipv6"]
-# NOTE that some calls convert the feed names from hyphenated to underscored
+# NOTE that some functions convert the feed names from hyphenated to underscored
 # Not ideal, but Postgres doesn't like hyphens in table and column names
-# You can, but then they have to be in quotes.  Which is differently non-ideal.
+# You can use them, but then they have to be in quotes.  Which is differently non-ideal.
 
 Base = declarative_base()
 
 engine = create_engine('postgresql+psycopg://postgres:spur_example_CHANGEME@localhost/postgres', echo=True)
 
-# Define the parent table with a compound primary key
+# Define the parent table with a compound primary key and partition by feed_type
 class SpurFeed(Base):
     __tablename__ = 'spur'
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -33,6 +33,8 @@ class SpurFeed(Base):
 
     autonomous_system = relationship("AutonomousSystem", back_populates="spur")
 
+# Define a table to store the repetitive AS information
+# NOTE: "as" is a reserved word in PostgreSQL, so that field from the feed is renamed to "as_number"
 class AutonomousSystem(Base):
     __tablename__ = 'autonomous_systems'
     as_number = Column(Integer, primary_key=True)
@@ -58,7 +60,6 @@ def init_db():
             conn.execute(partition)
 
 def create_date_partition(feed_type, feed_date, feed_date_end):
-    # PostgreSQL tables will be partitioned by dates
     # Each range's bounds are inclusive at the lower end and exclusive at the upper end.
     # So end date will be tomorrow, BUT tomorrow's data will not be in this partition
 
