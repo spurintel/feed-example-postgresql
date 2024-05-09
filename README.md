@@ -43,11 +43,11 @@ Launch a PostgreSQL container:
 docker compose up -d
 ```
 
-This starts a copy of PostgreSQL running on `localhost:5432`  It also starts a copy of Adminer on `localhost:8080` which is an ugly but simple interface into the database.
+This starts a copy of PostgreSQL running on `localhost:5432`  It also starts a copy of Adminer on http://localhost:8080 which is an ugly but simple interface into the database.
 
 These are only listening on the local interface for security reasons.  Do not change it unless you know what you are doing.  The default password is "spur_example_CHANGEME".  You can change it before launch in the `docker-compose.yml` file.
 
-The docker compose file also contains configuration for pgadmin4 - commented out.  It is a fantastic tool for managing PostgreSQL and the data, but complex far beyond the scope of this example.
+This also starts pgadmin4 on http://localhost:80.  It is a powerful tool, but complex beyond the scope of this example.  If you wish to use it, default user is "example@spur.us" password "spur_example_CHANGEME".  Click "add a new server" and set the connection parameters host: db, username: postgres, and password: spur_example_CHANGEME.
 
 ### Load the data
 
@@ -105,6 +105,11 @@ Query for a specific country:
 WHERE location @> '{"country": "KP"}'  
 LIMIT 100](http://localhost:8080/?pgsql=db&username=postgres&db=postgres&ns=public&sql=select%20*%20FROM%20spur%20%0AWHERE%20location%20%40%3E%20%27%7B%22country%22%3A%20%22KP%22%7D%27%0ALIMIT%20100%0A)
 
+Query for a specific country in a more human readable but less efficient way:  
+[select * FROM spur  
+WHERE location->>'country' = 'KP'  
+LIMIT 100](http://localhost:8080/?pgsql=db&username=postgres&db=postgres&ns=public&sql=select%20*%20FROM%20spur%20%0AWHERE%20location-%3E%3E%27country%27%20%3D%20%27KP%27%0ALIMIT%20100%0A%0A)
+
 Query complex sets like only IPv6 iCloud proxies but not those in the Fastly ASN or within the US:  
 [select * FROM spur  
 WHERE family(ip) = 6  
@@ -125,3 +130,17 @@ Since the data is partitioned into tables by type and day, you can significantly
 Query from only a specific data type and day table:  
 [SELECT * FROM "spur_anonymous_20240508"  
 LIMIT 100](http://localhost:8080/?pgsql=db&username=postgres&db=postgres&ns=public&sql=SELECT%20*%0AFROM%20%22spur_anonymous_20240508%22%0ALIMIT%20100)
+
+### Misc. Notes
+
+Since this is normally a read-only feed, data can be reingested.  Even so, it is occasionally useful to backup/restore older data, and this is one way.
+
+Backup
+```
+pg_dump -h localhost -p 5432 -U postgres -d postgres -t "spur*" > spur_anonymous_backup.sql
+```
+
+Restore
+```
+psql -h localhost -p 5432 -U postgres -d postgres -f spur_anonymous_backup.sql
+```

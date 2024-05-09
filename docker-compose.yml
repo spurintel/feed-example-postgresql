@@ -21,6 +21,8 @@ services:
     # Don't change this unless you know what you are doing securitywise
     ports:
       - 127.0.0.1:5432:5432
+    volumes:
+     - './data/postgresql:/var/lib/postgresql/data'
 
   # Stupid simple DB interface
   adminer:
@@ -32,11 +34,11 @@ services:
       - 127.0.0.1:8080:8080
 
   # PgAdmin is great, but can be a bit cumbersome
-  # pgadmin:
-  #   image: dpage/pgadmin4
-  #   restart: always
-  #   ports:
-  #     - 127.0.0.1:80:80
-  #   environment:
-  #     PGADMIN_DEFAULT_PASSWORD: spur_example_CHANGEME
-  #     PGADMIN_DEFAULT_EMAIL: example@spur.us
+  pgadmin:
+    image: dpage/pgadmin4
+    restart: always
+    ports:
+      - 127.0.0.1:80:80
+    environment:
+      PGADMIN_DEFAULT_PASSWORD: spur_example_CHANGEME
+      PGADMIN_DEFAULT_EMAIL: example@spur.us
