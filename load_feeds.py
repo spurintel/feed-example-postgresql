@@ -77,32 +77,13 @@ def load_feed(feed_type, feed_file, feed_date):
         ip_transform = "(data->>'network')::cidr"
     else:
         ip_transform = "(data->>'ip')::inet"
-    # Populate the AS table
-    # NOTE: "as" is a reserved word in PostgreSQL, so that field has been renamed to "as_number" in the database
+
     process_temp_table = sql.SQL(f"""
-        INSERT INTO autonomous_systems (as_number, organization_name)
-        SELECT DISTINCT ON ((data->'as'->>'number')::INTEGER) (data->'as'->>'number')::INTEGER as as_number,
-            (data->'as'->>'organization') as organization_name
-        FROM temp_spur
-        ON CONFLICT (as_number)
-        DO UPDATE SET organization_name = EXCLUDED.organization_name
-        WHERE autonomous_systems.organization_name <> EXCLUDED.organization_name
-        """)
-    cur.execute(process_temp_table)
-    process_temp_table = sql.SQL(f"""
-        INSERT INTO spur (ip, as_number, client, infrastructure, organization, location, services, tunnels, risks, feed_type, feed_date, load_time)
+        INSERT INTO spur (ip, context, feed_type, feed_date)
         SELECT {ip_transform} as ip,
-            (data->'as'->>'number')::INTEGER as as_number,
-            (data->'client') as client,
-            (data->>'infrastructure') as infrastructure,
-            (data->>'organization') as organization,
-            (data->'location') as location,
-            string_to_array(jsonb_array_elements_text(data->'services'), ',') as services,
-            (data->'tunnels') as tunnels,
-            string_to_array(jsonb_array_elements_text(data->'risks'), ',') as risks,
+            data as context,
             '{feed_type}' as feed_type,
-            '{feed_date}'::DATE as feed_date,
-            CURRENT_TIMESTAMP AT TIME ZONE 'UTC' as load_time
+            '{feed_date}'::DATE as feed_date
         FROM temp_spur;
         """)
     cur.execute(process_temp_table)
@@ -110,12 +91,6 @@ def load_feed(feed_type, feed_file, feed_date):
 
 
 if __name__ == '__main__':
-
-    # # Connect to your postgres DB
-    # conn = psycopg.connect(dbname=dbname, user=user, password=password, host=host)
-
-    # # Open a cursor to perform database operations
-    # cur = conn.cursor()
 
     init_db()
     # override FEED_TYPES if you only want to ingest a subset of the supported feed types. e.g.
