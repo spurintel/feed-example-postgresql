@@ -5,7 +5,7 @@ services:
 
   db:
     image: postgres
-    restart: always
+    restart: unless-stopped
     # set shared memory limit when using docker-compose
     shm_size: 128mb
     # or set shared memory limit when deploy via swarm stack
@@ -15,19 +15,49 @@ services:
     #    tmpfs:
     #      size: 134217728 # 128*2^20 bytes = 128Mb
     # Change the default password, please
-    environment:
-      POSTGRES_PASSWORD: spur_example_CHANGEME
+    # environment:
+    #   POSTGRES_PASSWORD: spur_example_CHANGEME
+    env_file:
+      - db.env
     # Ports limited to localhost
     # Don't change this unless you know what you are doing securitywise
     ports:
-      - 127.0.0.1:5432:5432
+      - 5432:5432
+    expose:
+      - "5432"
     volumes:
     # :delegated really only applies to Docker for MacOS
     # otherwise performance is severely degraded
     # it is ignored on other platforms
      - './data/postgresql:/var/lib/postgresql/data:delegated'
 
-  # Stupid simple DB interface
+  app:
+    build:
+      context: ./api/
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8000:8000"
+    depends_on:
+      - db
+    env_file:
+      - db.env
+    # volumes:
+    #   - ./app:/app
+    # environment:
+    #   - DATABASE_URL=postgresql://user:password@db:5432/mydatabase
+
+  load-feeds:
+    image: feed-example-postgresql-app
+    restart: no
+    environment:
+        SPUR_API_TOKEN: ${SPUR_API_TOKEN}  
+    env_file:
+      - db.env
+    command: ["python", "load_feeds.py"]
+    profiles: [load-feeds]
+
+  # Stupid simple DB GUI
   adminer:
     image: adminer
     restart: always
@@ -35,8 +65,9 @@ services:
     # Don't change this unless you know what you are doing securitywise
     ports:
       - 127.0.0.1:8080:8080
+    profiles: [adminer]
 
-  # PgAdmin is great, but can be a bit cumbersome
+  # PgAdmin is a great and powerful DB GUI, but complex
   pgadmin:
     image: dpage/pgadmin4
     restart: always
@@ -45,3 +76,4 @@ services:
     environment:
       PGADMIN_DEFAULT_PASSWORD: spur_example_CHANGEME
       PGADMIN_DEFAULT_EMAIL: example@spur.us
+    profiles: [pgadmin]

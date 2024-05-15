@@ -1,3 +1,5 @@
+#!/bin/env python
+
 import os
 import psycopg
 import gzip
@@ -11,8 +13,14 @@ from datetime import datetime, timedelta
 dbname = "postgres"
 user = "postgres"
 password = "spur_example_CHANGEME"
-host = "localhost"
+host = "db"
 SPUR_API_TOKEN = os.getenv('SPUR_API_TOKEN', None)
+if not SPUR_API_TOKEN:
+    raise ValueError("SPUR_API_TOKEN environment variable is not set")
+
+PSYCOPG_URL = os.getenv('PSYCOPG_URL', None)
+if not PSYCOPG_URL:
+    raise ValueError("PSYCOPG_URL environment variable is not set")
 
 # Connect to your postgres DB
 conn = psycopg.connect(dbname=dbname, user=user, password=password, host=host)
@@ -94,7 +102,7 @@ if __name__ == '__main__':
 
     init_db()
     # override FEED_TYPES if you only want to ingest a subset of the supported feed types. e.g.
-    # FEED_TYPES = ['anonymous-ipv6']
+    FEED_TYPES = ['anonymous-ipv6']
 
     for feed_type in FEED_TYPES:
         start_time = datetime.now()

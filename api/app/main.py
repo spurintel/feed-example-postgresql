@@ -11,9 +11,14 @@ from datetime import date, datetime, time, timedelta
 from typing import Dict, Any
 from feeds_db import SpurFeed
 from ipaddress import IPv6Address
+import os
 
-# # Database engine
-engine = create_engine('postgresql+psycopg://postgres:spur_example_CHANGEME@localhost/postgres', echo=True)
+SQLALCHEMY_URL = os.getenv('SQLALCHEMY_URL', None)
+if not SQLALCHEMY_URL:
+    raise ValueError("SQLALCHEMY_URL environment variable is not set")
+
+# Database engine
+engine = create_engine(SQLALCHEMY_URL, echo=True)
 
 # Session Local
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
