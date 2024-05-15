@@ -3,20 +3,12 @@
 
 ## Overview
 
-This project is designed to download Spur data feeds and ingest them into a PostgreSQL database.
-
+This project is designed to download Spur data feeds and ingest them into a PostgreSQL database. 
 It also provides a local version of the Spur Context API backed by this local database.
-
-
-
-This uses SQLAlchemy for the database modeling.  This ORM makes it easier to use the data programmatically
-with Python or build integrations or applications on top.
 
 The data is organized into table partitions by data type and day, so data may be easily aged off.
 Daily partitions match the cadence of most data feeds, so running the ingest once per day will keep
 everything up to date.
-
-This also uses psycopg to bulk load (PostgreSQL COPY) the JSON data files in a performant way.
 
 ## Column definitions
 
@@ -74,6 +66,7 @@ export SPUR_API_TOKEN=YOUR_FEED_ACCESS_TOKEN
 ```sh
 docker compose run load-feeds
 ```
+This uses psycopg to bulk load (PostgreSQL COPY) the JSON data files in a performant way.
 
 4) Visit http://localhost:8000/docs and click "Try it out"
    Enter an IP address and click Execute.
