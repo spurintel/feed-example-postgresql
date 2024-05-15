@@ -8,22 +8,30 @@ import tempfile
 import requests
 from feeds_db import init_db, create_date_partition, FEED_TYPES
 from datetime import datetime, timedelta
+import json
 
-# Database connection parameters
-dbname = "postgres"
-user = "postgres"
-password = "spur_example_CHANGEME"
-host = "db"
+# Get Spur API token
 SPUR_API_TOKEN = os.getenv('SPUR_API_TOKEN', None)
 if not SPUR_API_TOKEN:
     raise ValueError("SPUR_API_TOKEN environment variable is not set")
 
+# Database connection parameters
 PSYCOPG_URL = os.getenv('PSYCOPG_URL', None)
 if not PSYCOPG_URL:
     raise ValueError("PSYCOPG_URL environment variable is not set")
 
+# override FEED_TYPES if you only want to ingest a subset of the supported feed types. e.g.
+feed_types = os.getenv('FEED_TYPES', None)
+if feed_types:
+    try:
+        FEED_TYPES_TO_LOAD = json.loads(feed_types)
+    except:
+        raise ValueError("FEED_TYPES environment variable is not valid.")
+else:
+    FEED_TYPES_TO_LOAD = FEED_TYPES
+
 # Connect to your postgres DB
-conn = psycopg.connect(dbname=dbname, user=user, password=password, host=host)
+conn = psycopg.connect(PSYCOPG_URL)
 
 # Open a cursor to perform database operations
 cur = conn.cursor()
@@ -101,10 +109,8 @@ def load_feed(feed_type, feed_file, feed_date):
 if __name__ == '__main__':
 
     init_db()
-    # override FEED_TYPES if you only want to ingest a subset of the supported feed types. e.g.
-    FEED_TYPES = ['anonymous-ipv6']
 
-    for feed_type in FEED_TYPES:
+    for feed_type in FEED_TYPES_TO_LOAD:
         start_time = datetime.now()
         # download feed to a temp file
         (feed_file, feed_date) = download_feed(feed_type)
