@@ -56,7 +56,9 @@ def download_feed(feed_type):
 
     if response.status_code == 200:
         # Create a temporary file
-        with tempfile.NamedTemporaryFile(delete=False, mode='wb') as temp_file:
+
+
+        with tempfile.NamedTemporaryFile(dir='/tmp/spur', delete=False, mode='wb') as temp_file:
             # Write the contents of the response to the temp file
             for chunk in response.iter_content(chunk_size=8192):
                 temp_file.write(chunk)

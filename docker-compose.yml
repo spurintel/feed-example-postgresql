@@ -1,6 +1,4 @@
 # Use postgres/example user/password credentials
-version: '3.9'
-
 services:
 
   db:
@@ -39,10 +37,6 @@ services:
       - db
     env_file:
       - db.env
-    # volumes:
-    #   - ./app:/app
-    # environment:
-    #   - DATABASE_URL=postgresql://user:password@db:5432/mydatabase
 
   load-feeds:
     image: feed-example-postgresql-app
@@ -52,7 +46,21 @@ services:
     env_file:
       - db.env
     command: ["python", "load_feeds.py"]
+    volumes:
+    # :delegated really only applies to Docker for MacOS
+    # otherwise performance is severely degraded
+    # it is ignored on other platforms
+     - '/tmp/spur:/tmp/spur:delegated'
+
     profiles: [load-feeds]
+
+  prune-feeds:
+    image: feed-example-postgresql-app
+    restart: no
+    env_file:
+      - db.env
+    entrypoint: ["python", "prune_feeds.py"]
+    profiles: [prune-feeds]
 
   # Stupid simple DB GUI
   adminer:
