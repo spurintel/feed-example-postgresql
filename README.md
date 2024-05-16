@@ -71,7 +71,7 @@ Assumes you have a recent version of Docker and are comfortable using the comman
 
 3) Load the data
    ```sh
-   docker compose run load-feeds
+   docker compose run --rm load-feeds
    ```
    This downloads the feeds to a temporary file and performs a bulk load (PostgreSQL COPY) of the JSON data files.  This will take some time, 
    especially for the very large `anonymous-residential` feed.  Approximately 20 minutes on a MacBook Pro M1.
@@ -94,7 +94,7 @@ and will slow down queries, so keeping more than a few days online is counterpro
 
    - Example:  
       ```sh
-      docker compose run prune-feeds --days 2
+      docker compose run --rm prune-feeds --days 2
       ```
 
 ### Extras
