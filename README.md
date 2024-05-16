@@ -55,7 +55,7 @@ Assumes you have a recent version of Docker and are comfortable using the comman
 
 3) At his point the following should be running: 
    - PostgreSQL on `localhost:5432`
-   - The Context API on http://localhost:8000/v2/context/{ip address}
+   - The Context API on http://localhost:8000/v2/context/ {ip}
    - Documentation and an API test GUI on http://localhost:8000/docs
 
 ### Load the data
